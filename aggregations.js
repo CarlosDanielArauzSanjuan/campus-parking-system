@@ -32,6 +32,7 @@ db.parqueo.aggregate([
     }
   }
 ]);
+
  //-------------------------------------------------
 // 2 Encontrar la zona más ocupada por sede
 db.parqueo.aggregate([
@@ -73,6 +74,7 @@ db.parqueo.aggregate([
   }
 ]);
 
+//------------------------------------------------
 // 3 Ingresos totales por sede
 db.parqueo.aggregate([
   {
@@ -103,6 +105,7 @@ db.parqueo.aggregate([
   }
 ]);
 
+//------------------------------------------------
 // 4 Usuario que más ha utilizado el parqueo
 db.parqueo.aggregate([
   {
@@ -132,6 +135,7 @@ db.parqueo.aggregate([
   }
 ]);
 
+//------------------------------------------------
 // 5 Tipo de vehículo más frecuente por sede
 db.parqueo.aggregate([
   {
@@ -169,6 +173,7 @@ db.parqueo.aggregate([
   }
 ]);
 
+//------------------------------------------------
 // 6 Detalles de parqueos de un usuario específico
 db.parqueo.aggregate([
   { $match: { usuario_id: ObjectId("66ff1c000000000000000101") } },
@@ -217,6 +222,7 @@ db.parqueo.aggregate([
   }
 ]);
 
+//------------------------------------------------
 // 7 Detalles de parqueos activos (sin fecha de salida)
 db.parqueo.aggregate([
   { $match: { fecha_salida: null } },
@@ -250,6 +256,7 @@ db.parqueo.aggregate([
   }
 ]);
 
+//------------------------------------------------
 // 8 Zonas con parqueos activos que exceden su capacidad
 db.parqueo.aggregate([
   { $match: { fecha_salida: null } },
