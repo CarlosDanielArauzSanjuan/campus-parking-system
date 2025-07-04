@@ -183,8 +183,6 @@ db.createCollection('zonas', {
             }
         },
         additionalProperties: false
-
-
     }})
 
 db.createCollection('parqueo', {

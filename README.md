@@ -7,6 +7,7 @@
 
 **Campus Parking** es un sistema de gestión de parqueaderos diseñado para una organización con múltiples sedes. La plataforma permite administrar el ciclo completo de estacionamiento de vehículos: desde el registro de ingresos y salidas, hasta la gestión de usuarios (empleados y clientes) y el control de las zonas de parqueo. Todo el backend de datos se ha implementado en **MongoDB** para aprovechar su flexibilidad, escalabilidad y potentes capacidades de consulta.
 
+
 -----
 
 ## 💡 ¿Por qué MongoDB?
@@ -59,6 +60,8 @@ Cada colección está protegida con un esquema de validación (`$jsonSchema`) pa
   * **`vehiculos`**: Requiere `placa` (única), `marca`, `modelo`, `color`, `tipo` y la referencia `usuario_id`.
   * **`parqueo`**: Requiere referencias a `usuario_id`, `vehiculo_id`, `zona_id` y `sede_id`, además de `fecha_ingreso` y el `costo` total al finalizar.
 
+![alt text](db_config.png)
+
 -----
 
 ## ⚡ Índices
@@ -72,6 +75,7 @@ Para optimizar el rendimiento de las consultas más frecuentes, se crearon los s
 
 Estos índices **aceleran las consultas** de manera significativa y **garantizan la integridad** de los datos en campos que deben ser únicos.
 
+![alt text](indices.png)
 -----
 
 ## 🧪 Estructura de los Datos de Prueba
@@ -84,6 +88,7 @@ Para validar el modelo y las consultas, se generó un conjunto de datos de prueb
   * **15 usuarios** con rol de cliente.
   * **30 vehículos** distintos, cada uno asignado a un cliente.
   * **50 registros de parqueo**, incluyendo tanto históricos (finalizados) como activos (vehículos actualmente en el parqueadero).
+![alt text](test_dataset.png)
 
 -----
 
@@ -100,6 +105,7 @@ Se diseñaron varias consultas de agregación para extraer información valiosa 
 7.  **Vehículos parqueados actualmente:** Filtra la colección `parqueo` buscando documentos donde `fecha_salida` es nula.
 8.  **Zonas que han excedido su capacidad:** Agrupa los parqueos activos por zona y compara el conteo con el campo `capacidad` de la zona.
 
+![alt text](aggregations.png)
 -----
 
 ## 🔄 Transacción Atómica en MongoDB
@@ -118,6 +124,8 @@ Para garantizar la consistencia en operaciones críticas, se utilizan transaccio
 4.  Se actualiza el documento de la zona correspondiente, decrementando el contador de cupos disponibles con el operador `$inc`.
 5.  Si todos los pasos son exitosos, se confirma la transacción con `commitTransaction()`.
 6.  Si ocurre cualquier error (p. ej., no hay cupos), se revierte toda la operación con `abortTransaction()`, sin dejar cambios parciales en la base de datos.
+
+![alt text](transactions.png)
 
 -----
 
