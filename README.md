@@ -60,7 +60,7 @@ Cada colección está protegida con un esquema de validación (`$jsonSchema`) pa
   * **`vehiculos`**: Requiere `placa` (única), `marca`, `modelo`, `color`, `tipo` y la referencia `usuario_id`.
   * **`parqueo`**: Requiere referencias a `usuario_id`, `vehiculo_id`, `zona_id` y `sede_id`, además de `fecha_ingreso` y el `costo` total al finalizar.
 
-![alt text](db_config.png)
+![alt text](./Images/db_config.png)
 
 -----
 
@@ -75,7 +75,7 @@ Para optimizar el rendimiento de las consultas más frecuentes, se crearon los s
 
 Estos índices **aceleran las consultas** de manera significativa y **garantizan la integridad** de los datos en campos que deben ser únicos.
 
-![alt text](indices.png)
+![alt text](./Images/indices.png)
 -----
 
 ## 🧪 Estructura de los Datos de Prueba
@@ -88,7 +88,7 @@ Para validar el modelo y las consultas, se generó un conjunto de datos de prueb
   * **15 usuarios** con rol de cliente.
   * **30 vehículos** distintos, cada uno asignado a un cliente.
   * **50 registros de parqueo**, incluyendo tanto históricos (finalizados) como activos (vehículos actualmente en el parqueadero).
-![alt text](test_dataset.png)
+![alt text](./Images/test_dataset.png)
 
 -----
 
@@ -105,7 +105,7 @@ Se diseñaron varias consultas de agregación para extraer información valiosa 
 7.  **Vehículos parqueados actualmente:** Filtra la colección `parqueo` buscando documentos donde `fecha_salida` es nula.
 8.  **Zonas que han excedido su capacidad:** Agrupa los parqueos activos por zona y compara el conteo con el campo `capacidad` de la zona.
 
-![alt text](aggregations.png)
+![alt text](./Images/aggregations.png)
 -----
 
 ## 🔄 Transacción Atómica en MongoDB
@@ -125,7 +125,7 @@ Para garantizar la consistencia en operaciones críticas, se utilizan transaccio
 5.  Si todos los pasos son exitosos, se confirma la transacción con `commitTransaction()`.
 6.  Si ocurre cualquier error (p. ej., no hay cupos), se revierte toda la operación con `abortTransaction()`, sin dejar cambios parciales en la base de datos.
 
-![alt text](transactions.png)
+![alt text](./Images/transactions.png)
 
 -----
 
@@ -171,6 +171,14 @@ db.createUser({
 
   * **Conclusión:** MongoDB demostró ser una herramienta extremadamente **flexible y escalable** para modelar un sistema de parqueadero, donde las transacciones, validaciones e índices garantizan la **confiabilidad** del sistema.
   * **Mejoras Posibles:**
+      * PARA LOS REGISTROS DE DOCUMENTOS HAY QUE IMPLEMENTAR QUE SEAN GENERADOS Y AUTOMATICOS POR EL PROGRAMA.
       * Implementar un control de acceso más granular a nivel de backend para que los empleados solo puedan operar en su sede asignada.
       * Desarrollar dashboards de visualización en tiempo real y reportes automáticos.
       * Extender el sistema con integración de **sensores IoT** para la detección y registro automático de vehículos.
+
+
+
+
+**Desarrollado por:** Daniel Arauz 🧠
+
+Proyecto educativo: *Campus Parking System con MongoDB*
