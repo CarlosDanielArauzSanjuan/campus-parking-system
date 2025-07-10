@@ -1,21 +1,22 @@
 //------------------------------------------------
-// 1 Consultas de agregación para el sistema de parqueo
-db.parqueo.aggregate([
+// 1. ¿Cuántos parqueos se registraron por sede en el último mes?
+
+db.parqueos.aggregate([
   {
-    // Filtramos parqueos desde hace 30 días
+    // Filtrar parqueos cuya hora_entrada sea en los últimos 30 días
     $match: {
-      fecha_ingreso: { $gte: new Date(new Date().setDate(new Date().getDate() - 30)) }
+      hora_entrada: { $gte: new Date(new Date().setDate(new Date().getDate() - 30)) }
     }
   },
   {
-    // Agrupamos por sede
+    // Agrupar por sede y contar cantidad de parqueos
     $group: {
       _id: "$sede_id",
       total_parqueos: { $sum: 1 }
     }
   },
   {
-    // Unimos con la colección sedes para mostrar nombre
+    // Unir con la colección de sedes para mostrar el nombre
     $lookup: {
       from: "sedes",
       localField: "_id",
@@ -25,6 +26,7 @@ db.parqueo.aggregate([
   },
   { $unwind: "$sede" },
   {
+    // Mostrar solo nombre de sede y total
     $project: {
       _id: 0,
       sede: "$sede.nombre",
@@ -33,22 +35,20 @@ db.parqueo.aggregate([
   }
 ]);
 
- //-------------------------------------------------
-// 2 Encontrar la zona más ocupada por sede
-db.parqueo.aggregate([
+//------------------------------------------------
+// 2. ¿Cuáles son las zonas más ocupadas en cada sede?
+
+db.parqueos.aggregate([
   {
-    // Agrupamos por sede y zona para contar parqueos
+    // Agrupar por sede y zona
     $group: {
       _id: { sede_id: "$sede_id", zona_id: "$zona_id" },
       cantidad: { $sum: 1 }
     }
   },
+  { $sort: { "_id.sede_id": 1, cantidad: -1 } },
   {
-    // Ordenamos por sede y por cantidad descendente
-    $sort: { "_id.sede_id": 1, cantidad: -1 }
-  },
-  {
-    // Agrupamos por sede y dejamos solo la zona más ocupada
+    // Seleccionar la zona con más parqueos por sede
     $group: {
       _id: "$_id.sede_id",
       zona_mas_ocupada: { $first: "$_id.zona_id" },
@@ -75,11 +75,12 @@ db.parqueo.aggregate([
 ]);
 
 //------------------------------------------------
-// 3 Ingresos totales por sede
-db.parqueo.aggregate([
+// 3. ¿Cuál es el ingreso total generado por parqueo en cada sede?
+
+db.parqueos.aggregate([
   {
-    // Solo parqueos finalizados
-    $match: { fecha_salida: { $ne: null } }
+    // Solo parqueos finalizados (con hora_salida)
+    $match: { hora_salida: { $ne: null } }
   },
   {
     $group: {
@@ -106,8 +107,9 @@ db.parqueo.aggregate([
 ]);
 
 //------------------------------------------------
-// 4 Usuario que más ha utilizado el parqueo
-db.parqueo.aggregate([
+// 4. ¿Qué cliente ha usado más veces el parqueadero?
+
+db.parqueos.aggregate([
   {
     $group: {
       _id: "$usuario_id",
@@ -136,10 +138,11 @@ db.parqueo.aggregate([
 ]);
 
 //------------------------------------------------
-// 5 Tipo de vehículo más frecuente por sede
-db.parqueo.aggregate([
+// 5. ¿Qué tipo de vehículo es más frecuente por sede?
+
+db.parqueos.aggregate([
   {
-    // Unimos con vehículos y zonas
+    // Unimos con vehículos
     $lookup: {
       from: "vehiculos",
       localField: "vehiculo_id",
@@ -149,6 +152,7 @@ db.parqueo.aggregate([
   },
   { $unwind: "$vehiculo" },
   {
+    // Unimos con zonas para conocer tipo de vehículo permitido
     $lookup: {
       from: "zonas",
       localField: "zona_id",
@@ -158,6 +162,7 @@ db.parqueo.aggregate([
   },
   { $unwind: "$zona" },
   {
+    // Agrupamos por sede y tipo de vehículo
     $group: {
       _id: { sede: "$sede_id", tipo: "$zona.tipo_vehiculo" },
       total: { $sum: 1 }
@@ -174,9 +179,12 @@ db.parqueo.aggregate([
 ]);
 
 //------------------------------------------------
-// 6 Detalles de parqueos de un usuario específico
-db.parqueo.aggregate([
-  { $match: { usuario_id: ObjectId("66ff1c000000000000000101") } },
+// 6. Historial de parqueos de un cliente específico
+
+db.parqueos.aggregate([
+  { 
+    $match: { usuario_id: ObjectId("AQUÍ_VA_EL_ID_DEL_CLIENTE") } 
+  },
   {
     $lookup: {
       from: "vehiculos",
@@ -206,26 +214,33 @@ db.parqueo.aggregate([
   { $unwind: "$sede" },
   {
     $project: {
-      fecha_ingreso: 1,
-      fecha_salida: 1,
+      hora_entrada: 1,
+      hora_salida: 1,
       costo: 1,
       sede: "$sede.nombre",
       zona: "$zona.nombre",
       tipo_vehiculo: "$zona.tipo_vehiculo",
       tiempo_horas: {
-        $divide: [
-          { $subtract: ["$fecha_salida", "$fecha_ingreso"] },
-          1000 * 60 * 60
-        ]
+        $cond: {
+          if: { $and: ["$hora_salida", "$hora_entrada"] },
+          then: {
+            $divide: [
+              { $subtract: ["$hora_salida", "$hora_entrada"] },
+              1000 * 60 * 60
+            ]
+          },
+          else: null
+        }
       }
     }
   }
 ]);
 
 //------------------------------------------------
-// 7 Detalles de parqueos activos (sin fecha de salida)
-db.parqueo.aggregate([
-  { $match: { fecha_salida: null } },
+// 7. Vehículos actualmente parqueados en cada sede
+
+db.parqueos.aggregate([
+  { $match: { hora_salida: null } },
   {
     $lookup: {
       from: "vehiculos",
@@ -251,15 +266,16 @@ db.parqueo.aggregate([
       marca: "$vehiculo.marca",
       modelo: "$vehiculo.modelo",
       color: "$vehiculo.color",
-      fecha_ingreso: 1
+      hora_entrada: 1
     }
   }
 ]);
 
 //------------------------------------------------
-// 8 Zonas con parqueos activos que exceden su capacidad
-db.parqueo.aggregate([
-  { $match: { fecha_salida: null } },
+// 8. Zonas que han excedido su capacidad de parqueo
+
+db.parqueos.aggregate([
+  { $match: { hora_salida: null } },
   {
     $group: {
       _id: "$zona_id",
@@ -286,4 +302,200 @@ db.parqueo.aggregate([
   },
   { $match: { excedido: true } }
 ]);
+//------------------------------------------------
 
+// Promedio de tiempo de parqueo por sede
+// Calcula el promedio de horas que un vehículo permanece parqueado en cada sede
+db.parqueos.aggregate([
+  { $match: { hora_salida: { $ne: null } } },
+  {
+    $project: {
+      sede_id: 1,
+      duracion_horas: {
+        $divide: [{ $subtract: ["$hora_salida", "$hora_entrada"] }, 1000 * 60 * 60]
+      }
+    }
+  },
+  {
+    $group: {
+      _id: "$sede_id",
+      promedio_horas: { $avg: "$duracion_horas" }
+    }
+  }
+]);
+
+//------------------------------------------------
+//  Zonas con menor rotación (menos parqueos totales)
+// Encuentra las zonas con menor cantidad de parqueos históricos
+db.parqueos.aggregate([
+  { $group: { _id: "$zona_id", total_parqueos: { $sum: 1 } } },
+  { $sort: { total_parqueos: 1 } },
+  {
+    $lookup: {
+      from: "zonas",
+      localField: "_id",
+      foreignField: "_id",
+      as: "zona"
+    }
+  },
+  { $unwind: "$zona" },
+  {
+    $project: {
+      zona: "$zona.nombre",
+      total_parqueos: 1
+    }
+  }
+]);
+//------------------------------------------------
+//Clientes que más han pagado en total
+// Identifica los clientes que han pagado más dinero acumulado
+db.parqueos.aggregate([
+  { $match: { hora_salida: { $ne: null } } },
+  { $group: { _id: "$usuario_id", total_pagado: { $sum: "$costo" } } },
+  { $sort: { total_pagado: -1 } },
+  {
+    $lookup: {
+      from: "usuarios",
+      localField: "_id",
+      foreignField: "_id",
+      as: "usuario"
+    }
+  },
+  { $unwind: "$usuario" },
+  {
+    $project: {
+      nombre: "$usuario.nombre",
+      email: "$usuario.email",
+      total_pagado: 1
+    }
+  }
+]);
+//------------------------------------------------
+ // Promedio de parqueos por cliente
+ // Calcula el promedio general de parqueos por cliente
+db.parqueos.aggregate([
+  { $group: { _id: "$usuario_id", cantidad: { $sum: 1 } } },
+  {
+    $group: {
+      _id: null,
+      promedio: { $avg: "$cantidad" }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      promedio_parqueos_por_cliente: "$promedio"
+    }
+  }
+]);
+//------------------------------------------------
+// Histograma de parqueos por hora del día
+// Muestra cuántos parqueos ocurren por hora (de 0 a 23)
+db.parqueos.aggregate([
+  { $project: { hora: { $hour: "$hora_entrada" } } },
+  { $group: { _id: "$hora", cantidad: { $sum: 1 } } },
+  { $sort: { _id: 1 } }
+]);
+
+//------------------------------------------------
+//Frecuencia de uso por tipo de vehículo
+// Muestra cuántas veces se han parqueado por tipo de vehículo (carro, moto, etc.)
+db.parqueos.aggregate([
+  {
+    $lookup: {
+      from: "zonas",
+      localField: "zona_id",
+      foreignField: "_id",
+      as: "zona"
+    }
+  },
+  { $unwind: "$zona" },
+  { $group: { _id: "$zona.tipo_vehiculo", total: { $sum: 1 } } },
+  { $sort: { total: -1 } }
+]);
+
+//------------------------------------------------
+//Ranking de zonas por ingresos
+// Calcula el total de dinero generado por cada zona
+db.parqueos.aggregate([
+  { $match: { hora_salida: { $ne: null } } },
+  { $group: { _id: "$zona_id", ingreso_total: { $sum: "$costo" } } },
+  {
+    $lookup: {
+      from: "zonas",
+      localField: "_id",
+      foreignField: "_id",
+      as: "zona"
+    }
+  },
+  { $unwind: "$zona" },
+  {
+    $project: {
+      zona: "$zona.nombre",
+      ingreso_total: 1
+    }
+  },
+  { $sort: { ingreso_total: -1 } }
+]);
+//------------------------------------------------
+//Tasa de ocupación actual por zona
+// Muestra el porcentaje de ocupación actual por zona
+db.parqueos.aggregate([
+  { $match: { hora_salida: null } },
+  { $group: { _id: "$zona_id", activos: { $sum: 1 } } },
+  {
+    $lookup: {
+      from: "zonas",
+      localField: "_id",
+      foreignField: "_id",
+      as: "zona"
+    }
+  },
+  { $unwind: "$zona" },
+  {
+    $project: {
+      zona: "$zona.nombre",
+      capacidad: "$zona.capacidad",
+      activos: 1,
+      ocupacion: {
+        $divide: ["$activos", "$zona.capacidad"]
+      }
+    }
+  },
+  { $sort: { ocupacion: -1 } }
+]);
+//------------------------------------------------
+//Clientes que han usado más de una sede
+// Muestra los clientes que han usado más de una sede diferente
+db.parqueos.aggregate([
+  { $group: { _id: "$usuario_id", sedes: { $addToSet: "$sede_id" } } },
+  {
+    $project: {
+      cantidad_sedes: { $size: "$sedes" },
+      sedes: 1
+    }
+  },
+  { $match: { cantidad_sedes: { $gt: 1 } } }
+]);
+//------------------------------------------------
+// Promedio de costo por tipo de vehículo
+// Calcula cuánto se cobra en promedio según el tipo de vehículo
+db.parqueos.aggregate([
+  { $match: { hora_salida: { $ne: null } } },
+  {
+    $lookup: {
+      from: "zonas",
+      localField: "zona_id",
+      foreignField: "_id",
+      as: "zona"
+    }
+  },
+  { $unwind: "$zona" },
+  {
+    $group: {
+      _id: "$zona.tipo_vehiculo",
+      promedio_costo: { $avg: "$costo" }
+    }
+  }
+]);
+//------------------------------------------------

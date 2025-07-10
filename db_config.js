@@ -7,12 +7,8 @@ db.createCollection("usuarios", {
     validator: {
         $jsonSchema: {
             bsonType: "object",
-            required: ['_id', 'nombre', "email", 'telefono', 'cedula',],
+            required: ['nombre', "email", 'telefono', 'cedula','rol'],
             properties: {
-                _id: {
-                    bsonType: "objectId",
-                    description: "El Identificador unico del usuario"
-                },
                 nombre: {
                     bsonType: "string",
                     pattern: "^[a-zA-Z ]+$",
@@ -39,23 +35,25 @@ db.createCollection("usuarios", {
                     bsonType: "date",
                     description: "La fecha de registro debe ser una fecha válida"
                 },
+                rol: {
+                    bsonType: "string",
+                    enum: ["cliente", "administrador", "empleado"],
+                    description: "El rol debe ser 'cliente', 'administrador' o 'empleado'"
+                }   
             },
-            additionalProperties: false
+           // additionalProperties: false
         }
     }
 }
 );
+//------------------------------------------------------------------------------------------------------------
 
 db.createCollection("vehiculos", {
     validator: {
         $jsonSchema: {
             bsonType: "object",
-            required: ['_id', 'usuario_id', 'placa', 'marca', 'modelo', 'color'],
+            required: ['usuario_id', 'placa', 'marca', 'modelo', 'color'],
             properties: {
-                _id: {
-                    bsonType: "objectId",
-                    description: "El Identificador unico del vehículo"
-                },
                 usuario_id: {
                     bsonType: "objectId",
                     description: "El ID del usuario al que pertenece el vehículo",
@@ -68,42 +66,40 @@ db.createCollection("vehiculos", {
                 },
                 marca: {
                     bsonType: "string",
-                    pattern: "^[a-zA-Z ]+$",
+                    pattern: "^[a-zA-ZñÑáéíóúÁÉÍÓÚ ]+$",
                     minLength: 1,
                     maxLength: 50,
                     description: "La marca del vehículo debe ser una cadena de letras y espacios, y tener entre 1 y 50 caracteres"
                 },
                 modelo: {
                     bsonType: "string",
-                    pattern: "^[a-zA-Z0-9 ]+$",
+                    pattern: "^[a-zA-Z0-9\\- ]+$",
                     minLength: 1,
                     maxLength: 50,
                     description: "El modelo del vehículo debe ser una cadena de letras, números y espacios, y tener entre 1 y 50 caracteres"
                 },
                 color: {
                     bsonType: "string",
-                    pattern: "^[a-zA-Z ]+$",
+                    pattern: "^[a-zA-ZñÑáéíóúÁÉÍÓÚ ]+$",
                     minLength: 1,
                     maxLength: 30,
                     description: "El color del vehículo debe ser una cadena de letras y espacios, y tener entre 1 y 30 caracteres"
                 },
             }
         },
-        additionalProperties: false
+       // additionalProperties: false
     }
 }
 );
+
+//------------------------------------------------------------------------------------------------------------
 
 db.createCollection('sedes', {
     validator: {
         $jsonSchema: {
             bsonType: "object",
-            required: ['_id', 'nombre', 'direccion', 'telefono', "ciudad", 'estado'],
+            required: ['nombre', 'direccion', 'telefono', "ciudad", 'estado'],
         properties: {
-                _id: {
-                    bsonType: "objectId",
-                    description: "El Identificador unico de la sede"
-                },
                 nombre: {
                     bsonType: "string",
                     pattern: "^[a-zA-Z ]+$",
@@ -124,7 +120,7 @@ db.createCollection('sedes', {
                 },
                 ciudad: {
                     bsonType: "string",
-                    pattern: "^[a-zA-Z ]+$",
+                    pattern: "^[a-zA-ZñÑáéíóúÁÉÍÓÚ ]+$",
                     minLength: 1,
                     maxLength: 50,
                     description: "La ciudad debe ser una cadena de letras y espacios, y tener entre 1 y 50 caracteres"
@@ -132,35 +128,33 @@ db.createCollection('sedes', {
                 estado: {
                     bsonType: "string",
                     enum: ["abierto", "cerrado", "mantenimiento"],
-                    description: "El estado debe ser 'abierto' 'cerrado''mantenimiento'"
+                    description: "El estado debe ser 'abierto', 'cerrado' o 'mantenimiento'"
                 }
             }
         },
-        additionalProperties: false
+       // additionalProperties: false
     }
 })
+
+//------------------------------------------------------------------------------------------------------------
 
 db.createCollection('zonas', {
     validator: {
         $jsonSchema: {
             bsonType: "object",
-            required: ['_id', 'sede_id', 'nombre', 'capacidad', 'estado', 'tipo_vehiculo', 'tarifa'],
+            required: ['sede_id', 'nombre', 'capacidad', 'estado', 'tipo_vehiculo', 'tarifa'],
             properties: {
-                _id: {
-                    bsonType: "objectId",
-                    description: "El Identificador unico de la zona"
-                },
                 sede_id: {
                     bsonType: "objectId",
                     description: "El ID de la sede a la que pertenece la zona"
                 },
                 nombre: {
                     bsonType: "string",
-                    pattern: "^[A-E ]{1}",
+                    pattern: "^[A-E]$",
                     description: "El nombre de la zona debe ser una Letra entre A y E",
                 },
                 capacidad: {
-                    bsonType: "int",
+                    bsonType: ["int", "long"],
                     minimum: 1,
                     maximum: 100,
                     description: "La capacidad debe ser un número entero entre 1 y 100"
@@ -176,25 +170,23 @@ db.createCollection('zonas', {
                     description: "El tipo de vehículo debe ser 'carro', 'moto', 'bicicleta', 'camion'"
                 },
                 tarifa: {
-                    bsonType: "double",
+                    bsonType: ["double", "int"],
                     minimum: 0,
                     description: "La tarifa debe ser un número decimal no negativo"
                 }
             }
         },
-        additionalProperties: false
+      //  additionalProperties: false
     }})
+
+    //------------------------------------------------------------------------------------------------------------
 
 db.createCollection('parqueo', {
     validator: {
         $jsonSchema: {
             bsonType: "object",
-            required: ['_id', 'usuario_id', 'sede_id', 'vehiculo_id', 'zona_id', 'fecha_ingreso', 'fecha_salida', 'costo'],
+            required: ['usuario_id', 'sede_id', 'vehiculo_id', 'zona_id', 'fecha_ingreso', 'costo'],
             properties: {
-                _id: {
-                    bsonType: "objectId",
-                    description: "El Identificador unico del parqueo"
-                },
                 usuario_id: {
                     bsonType: "objectId",
                     description: "El ID del usuario que realiza el parqueo"
@@ -226,7 +218,7 @@ db.createCollection('parqueo', {
                 }
             }
         },
-        additionalProperties: false
+       // additionalProperties: false
     }
 
 }
@@ -234,7 +226,6 @@ db.createCollection('parqueo', {
 
 db.usuarios.createIndex({ email: 1 }, { unique: true });
 db.usuarios.createIndex({ cedula: 1 }, { unique: true });
-db.usuarios.createIndex({ sede_id: 1}, { unique: false });
 
 db.vehiculos.createIndex({ placa: 1 }, { unique: true });
 db.vehiculos.createIndex({ usuario_id: 1 }, { unique: false });
@@ -246,8 +237,7 @@ db.sedes.createIndex({ ciudad: 1 }, { unique: false });
 db.sedes.createIndex({ estado: 1 }, { unique: false });
 db.sedes.createIndex({ telefono: 1 }, { unique: false });
 
-db.zonas.createIndex({ sede_id: 1 }, { unique: false });
-db.zonas.createIndex({ nombre: 1 }, { unique: false });
+db.zonas.createIndex({ sede_id: 1, nombre: 1 }, { unique: true });
 db.zonas.createIndex({ estado: 1 }, { unique: false });
 db.zonas.createIndex({ tipo_vehiculo: 1 }, { unique: false });
 db.zonas.createIndex({ tarifa: 1 }, { unique: false });
