@@ -58,3 +58,77 @@ function parqueoCalculo(parqueoId) {
   }
 
 
+//-------------------------------------
+
+
+function calcularCostoParqueo(parqueoId) {
+  // Iniciamos una sesión para poder trabajar con transacciones
+  const session = db.getMongo().startSession();
+
+  try {
+    // Inicia la transacción
+    session.startTransaction();
+
+    // 1️⃣ Buscar el parqueo activo (que aún no tiene hora_salida)
+    const parqueo = db.parqueos.findOne(
+      {
+        _id: ObjectId(parqueoId),   // Convertimos el ID recibido a ObjectId
+        hora_salida: null           // Solo si aún está activo (sin salida)
+      },
+      { session }                   // Importante: ejecutar dentro de la transacción
+    );
+
+    // Validación: si no se encuentra o ya está cerrado
+    if (!parqueo) {
+      throw new Error("Parqueo no encontrado o ya fue cerrado.");
+    }
+
+    // 2️⃣ Buscar la zona relacionada para obtener la tarifa por hora
+    const zona = db.zonas.findOne(
+      { _id: parqueo.zona_id },    // Tomamos la zona_id desde el parqueo
+      { session }
+    );
+
+    const tarifaHora = zona.tarifa_hora; // Guardamos la tarifa extraída
+
+    // 3️⃣ Calcular el tiempo total (en horas redondeadas hacia arriba)
+    const horaSalida = new Date(); // Tomamos la hora actual como salida
+    const tiempoTotalHoras = Math.ceil(
+      (horaSalida - parqueo.hora_entrada) / (1000 * 60 * 60)
+    );
+    // Se divide entre mil (ms) → 60 (min) → 60 (h)
+
+    // 4️⃣ Calcular el costo total
+    const costoTotal = tiempoTotalHoras * tarifaHora;
+
+    // 5️⃣ Actualizar el parqueo con hora_salida y costo
+    db.parqueos.updateOne(
+      { _id: parqueo._id },
+      {
+        $set: {
+          hora_salida: horaSalida,  // Guardamos la hora actual como salida
+          costo: costoTotal         // Guardamos el costo calculado
+        }
+      },
+      { session }
+    );
+
+    // 6️⃣ Confirmamos la transacción: se guardan todos los cambios
+    session.commitTransaction();
+
+    // 7️⃣ Mostramos el resultado por consola (como pide el enunciado)
+    printjson({
+      tiempoTotalHoras,
+      tarifaHora,
+      costoTotal
+    });
+
+  } catch (error) {
+    // Si ocurre algún error, cancelamos los cambios hechos
+    session.abortTransaction();
+    print("❌ Error:", error.message);
+  } finally {
+    // Siempre cerramos la sesión al final
+    session.endSession();
+  }
+}
